@@ -56,20 +56,45 @@ class HomeView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false,
         actions: [
-          Row(
-            children: const [
-              CircleAvatar(
-                backgroundImage: AssetImage('assets/avatar.png'),
-                radius: 18,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Иван Иванов',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(width: 16),
-            ],
-          )
+          Builder(
+            builder: (context) {
+              final userData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+              final String name = userData?['name'] ?? 'Иван';
+              final String lastName = userData?['last_name'] ?? 'Иванов';
+
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/profile', arguments: userData);
+                },
+                child: Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$name $lastName',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          '🏅 x3',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 8),
+                    const CircleAvatar(
+                      backgroundImage: AssetImage('assets/avatar.png'),
+                      radius: 18,
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
       extendBodyBehindAppBar: true,
@@ -95,33 +120,40 @@ class HomeView extends StatelessWidget {
                 final weekdayStr = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][wday - 1];
                 final type = wday == 5 ? 'Игра' : 'Тренировка';
                 return InkWell(
-                  onTap: () => _navigateToMembersView(context, date, type),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '$weekdayStr – ${date.day}.${date.month}',
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                onTap: () => _navigateToMembersView(context, date, type),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$weekdayStr – ${date.day}.${date.month}',
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: type == 'Игра' ? Colors.blue : Colors.green,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        Text(
+                        child: Text(
                           type,
-                          style: TextStyle(
-                            color: type == 'Игра' ? Colors.red[200] : Colors.greenAccent,
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
+                ),
+              );
               }).toList(),
             ),
             const SizedBox(height: 8),

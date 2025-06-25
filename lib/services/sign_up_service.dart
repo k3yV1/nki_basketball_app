@@ -26,17 +26,14 @@ class SignUpService {
         final responseData = jsonDecode(response.body);
         final token = responseData['token'];
         print('✅ Регистрация успешна. Токен: $token');
-        print("true");
         return true; // Успешно
       } else {
         final error = jsonDecode(response.body);
-        print('❌ Ошибка регистрации: $error');
         return {
           'error': error['message'] ?? 'Неизвестная ошибка регистрации',
         };
       }
     } catch (e) {
-      print('❌ Ошибка сети/исключение: $e');
       return {
         'error': 'Ошибка сети: $e',
       };
