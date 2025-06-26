@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:nki_basketball/services/tokenStorage/token_storage.dart';
 
 class SignInService {
   final String _baseUrl = 'http://localhost:3000/api';
@@ -26,6 +27,11 @@ class SignInService {
 
       if (userResponse.statusCode == 200) {
         final userData = jsonDecode(userResponse.body);
+        final token = responseData['token'];
+        print('Токен: $token');
+        //await _storage.write(key: 'token', value: token);
+        await TokenStorage().saveToken(token);
+
         return userData; // Данные пользователя
       } else {
         print('Ошибка получения данных пользователя');

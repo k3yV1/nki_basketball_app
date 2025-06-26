@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nki_basketball/services/logout_service.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({Key? key}) : super(key: key);
@@ -129,8 +130,9 @@ class ProfileView extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/signin');
+                onPressed: () async {
+                  await LogoutService().logout();
+                  Navigator.of(context).pushNamedAndRemoveUntil('/signin', (route) => false);
                 },
                 style: OutlinedButton.styleFrom(
                   backgroundColor: Colors.white,
