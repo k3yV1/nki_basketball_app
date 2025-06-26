@@ -87,7 +87,7 @@ class _SignUpViewState extends State<SignUpView> {
       lastName: lastName,
     );
 
-    if (result == '') {
+    if (result) {
       Navigator.pushReplacementNamed(context, '/signin');
     } else {
       setState(() {
