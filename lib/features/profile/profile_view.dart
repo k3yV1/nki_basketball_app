@@ -13,6 +13,8 @@ class ProfileView extends StatelessWidget {
     final String email = userData?['email'] ?? 'email@example.com';
     final String avatarUrl = userData?['avatar_url'] ??
         'https://api.dicebear.com/7.x/bottts/png?seed=$name+$lastName';
+    final bool isAdmin = userData?['is_admin'] ?? false;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -97,6 +99,53 @@ class ProfileView extends StatelessWidget {
               child: const Text(
                 '🏅 MVP: 3 награды',
                 style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+            const SizedBox(height: 14),
+            if (isAdmin)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, '/users');
+                },
+                child: const Text(
+                  'Пользователи',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+            if (isAdmin)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, '/subscriptions');
+                },
+                child: const Text(
+                  'Активные абоненты',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
             const Spacer(),
