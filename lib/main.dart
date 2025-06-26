@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import 'routes/app_routes.dart';
+import 'services/notifications/notifications_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // init notifications
+  NotificationsService().initialize();
+
+  Future.delayed(Duration(seconds: 5), () {
+    NotificationsService().showNotification(
+      id: 0,
+      title: '🏀 Тренировка сегодня',
+      body: 'Не забудь подготовиться и взять кроссовки!',
+    );
+  });
+
   runApp(NkiBasketballApp());
 }
 
