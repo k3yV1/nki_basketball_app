@@ -5,12 +5,14 @@ class Subscription {
   final int id;
   final int userId;
   final String name;
+  final String last_name;
   final bool isPaid;
 
   Subscription({
     required this.id,
     required this.userId,
     required this.name,
+    required this.last_name,
     required this.isPaid,
   });
 
@@ -18,6 +20,7 @@ class Subscription {
     return Subscription(
       id: json['id'],
       name: json['name'] ?? 'Unknown User',
+      last_name: json['last_name'] ?? 'Unknown Last Name',
       userId: json['user_id'],
       isPaid: json['is_paid'] == 1 || json['is_paid'] == true,
     );

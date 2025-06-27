@@ -21,7 +21,7 @@ class _SubscriptionViewState extends State<SubscriptionView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Подписки', style: TextStyle(color: Colors.white)),
+        title: const Text('Активные абонементы', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -68,7 +68,7 @@ class _SubscriptionViewState extends State<SubscriptionView> {
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.only(top: kToolbarHeight + 32, bottom: 40),
+                padding: const EdgeInsets.only(top: kToolbarHeight + 80, bottom: 40),
                 itemCount: subscriptions.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
@@ -80,13 +80,31 @@ class _SubscriptionViewState extends State<SubscriptionView> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white24),
                     ),
-                    child: Text(
-                      'Пользователь: ${sub.name}\n',
-                      style: const TextStyle(color: Colors.white),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${sub.name} ${sub.last_name}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          sub.isPaid ? 'Оплачено ✅' : 'Не оплачено ❌',
+                          style: TextStyle(
+                            color: sub.isPaid ? Colors.greenAccent : Colors.redAccent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
-              );
+              );;
             }
           },
         ),

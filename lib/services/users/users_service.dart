@@ -7,7 +7,7 @@ class User {
   final String email;
   final String last_name;
   final bool is_ready;
-  final bool subscription;
+  bool subscription;
   bool is_paid;
 
 

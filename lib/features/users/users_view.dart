@@ -29,93 +29,127 @@ class _UsersViewState extends State<UsersView> {
   }
 
   Future<void> _saveChanges() async {
-    for (final user in _users) {
-      await UsersService().updateSubscription(user.id, user.is_paid);
-    }
-
-    setState(() {
-      _isEditing = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Изменения сохранены')),
-    );
+  for (final user in _users) {
+    await UsersService().updateSubscription(user.id, user.subscription);
   }
+
+  setState(() {
+    _isEditing = false;
+    _usersFuture = UsersService().fetchUsers(); // обновим список
+  });
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Изменения сохранены')),
+  );
+}
+
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Пользователи', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          TextButton(
-            onPressed: _isEditing ? _saveChanges : _toggleEdit,
-            child: Text(
-              _isEditing ? 'Сохранить' : 'Изменить',
-              style: const TextStyle(color: Colors.white),
+    Widget build(BuildContext context) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Пользователи', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        extendBodyBehindAppBar: true,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xff2c5364),
+                Color(0xff203e43),
+                Color(0xff0f2027),
+              ],
             ),
-          )
-        ],
-      ),
-      extendBodyBehindAppBar: true,
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xff2c5364),
-              Color(0xff203e43),
-              Color(0xff0f2027),
-            ],
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: FutureBuilder<List<User>>(
+                    future: _usersFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                            child: CircularProgressIndicator(color: Colors.white));
+                      } else if (snapshot.hasError) {
+                        return const Center(
+                          child: Text(
+                            'Ошибка при загрузке данных',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        );
+                      } else {
+                        return ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          itemCount: _users.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(color: Colors.white24),
+                          itemBuilder: (context, index) {
+                            final user = _users[index];
+
+                            return ListTile(
+                              title: Text('${user.name} ${user.last_name}',
+                                  style: const TextStyle(color: Colors.white)),
+                              subtitle: Text(user.email,
+                                  style: const TextStyle(color: Colors.white70)),
+                              trailing: _isEditing
+                            ? Theme(
+                                data: ThemeData(
+                                  unselectedWidgetColor: Colors.white,
+                                ),
+                                child: Checkbox(
+                                  value: user.subscription,
+                                  activeColor: Colors.white,
+                                  checkColor: Colors.black,
+                                  side: const BorderSide(color: Colors.white, width: 2),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      user.subscription = value ?? false;
+                                    });
+                                  },
+                                ),
+                              )
+                            : Icon(
+                                user.subscription ? Icons.check_circle : Icons.cancel,
+                                color: user.subscription ? Colors.green : Colors.red,
+                              ),
+                            );
+                          },
+                        );
+                      }
+                    },
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                  child: ElevatedButton(
+                    onPressed: _isEditing ? _saveChanges : _toggleEdit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Text(
+                      _isEditing ? 'Сохранить' : 'Изменить',
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        child: FutureBuilder<List<User>>(
-          future: _usersFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Colors.white));
-            } else if (snapshot.hasError) {
-              return const Center(
-                child: Text(
-                  'Ошибка при загрузке данных',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            } else {
-              return ListView.builder(
-                itemCount: _users.length,
-                padding: const EdgeInsets.only(top: kToolbarHeight + 32, bottom: 40),
-                itemBuilder: (context, index) {
-                  final user = _users[index];
-
-                  return ListTile(
-                    title: Text('${user.name} ${user.last_name}', style: const TextStyle(color: Colors.white)),
-                    subtitle: Text(user.email, style: const TextStyle(color: Colors.white70)),
-                    trailing: _isEditing
-                        ? Checkbox(
-                            value: user.is_paid,
-                            onChanged: (value) {
-                              setState(() {
-                                user.is_paid = value ?? false;
-                              });
-                            },
-                          )
-                        : Icon(
-                            user.is_paid ? Icons.check_circle : Icons.cancel,
-                            color: user.is_paid ? Colors.green : Colors.red,
-                          ),
-                  );
-                },
-              );
-            }
-          },
-        ),
-      ),
-    );
-  }
+      );
+    }
 }
