@@ -5,6 +5,7 @@ import '../features/home/home_view.dart';
 import '../features/profile/profile_view.dart';
 import '../features/subscriptions/subscription_view.dart';
 import '../features/users/users_view.dart';
+import '../features/teams/teams.view.dart';
 
 class AppRoutes {
   static const start = '/';
@@ -14,6 +15,7 @@ class AppRoutes {
   static const profile = '/profile';
   static const subscription = '/subscriptions';
   static const users = '/users';
+  static const teams = '/teams';
 
   static final routes = {
     start: (context) => StartView(),
@@ -23,5 +25,6 @@ class AppRoutes {
     profile: (context) => ProfileView(),
     subscription: (context) => SubscriptionView(),
     users: (context) => UsersView(),
+    teams: (context) => TeamsView(),
   };
 }

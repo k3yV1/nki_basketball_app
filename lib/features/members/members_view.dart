@@ -52,13 +52,27 @@ class MembersView extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Участники:',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Участники:',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/teams');
+                                  },
+                                  child: const Text(
+                                    'Команды',
+                                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
                           ),
                           const SizedBox(height: 12),
                           ...members.map((m) => Container(
