@@ -86,8 +86,8 @@ class MembersView extends StatelessWidget {
                                 child: Row(
                                   children: [
                                     Icon(
-                                      m.isPresent ? Icons.check_circle : Icons.cancel,
-                                      color: m.isPresent ? Colors.greenAccent : Colors.redAccent,
+                                      m.isReady ? Icons.check_circle : Icons.cancel,
+                                      color: m.isReady ? Colors.greenAccent : Colors.redAccent,
                                     ),
                                     const SizedBox(width: 12),
                                     Text(

@@ -7,6 +7,7 @@ class Subscription {
   final String name;
   final String last_name;
   final bool isPaid;
+  final bool is_ready;
 
   Subscription({
     required this.id,
@@ -14,6 +15,7 @@ class Subscription {
     required this.name,
     required this.last_name,
     required this.isPaid,
+    required this.is_ready,
   });
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
@@ -22,7 +24,8 @@ class Subscription {
       name: json['name'] ?? 'Unknown User',
       last_name: json['last_name'] ?? 'Unknown Last Name',
       userId: json['user_id'],
-      isPaid: json['is_paid'] == 1 || json['is_paid'] == true,
+      isPaid: json['is_paid'] == 1 || json['is_paid'],
+      is_ready: json['is_ready'] == 1 || json['is_ready'] == true,
     );
   }
 }
@@ -36,6 +39,7 @@ class SubscriptionsService {
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
+        print(jsonList);
         return jsonList.map((json) => Subscription.fromJson(json)).toList();
       } else {
         print('Failed to fetch subscriptions: ${response.statusCode}');
@@ -64,6 +68,27 @@ class SubscriptionsService {
       }
     } catch (e) {
       print('Error updating subscription: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updateUserReadyStatus(int id, bool isReady) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$_baseUrl/subscriptions/is_ready_user_to_be_training/$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'is_ready': isReady}),
+      );
+
+      if (response.statusCode == 200) {
+        print('User ready status updated successfully');
+        return true;
+      } else {
+        print('Failed to update user ready status: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Error updating user ready status: $e');
       return false;
     }
   }

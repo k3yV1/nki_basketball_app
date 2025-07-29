@@ -2,14 +2,58 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:nki_basketball/features/members/members_view.dart';
 import 'package:nki_basketball/data/models/member_model.dart';
+import 'package:nki_basketball/services/subscriptions/subscriptions_service.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends StatefulWidget {
   const HomeView({Key? key}) : super(key: key);
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  final SubscriptionsService _subscriptionsService = SubscriptionsService();
+  List<Member> _paidMembers = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPaidMembers();
+  }
+
+  Future<void> _fetchPaidMembers() async {
+    final subscriptions = await _subscriptionsService.fetchSubscriptions();
+    final members = subscriptions
+        .where((s) => s.isPaid)
+        .map((s) => Member(name: '${s.name} ${s.last_name}', isReady: s.is_ready))
+        .toList();
+
+    setState(() {
+      _paidMembers = members;
+      _isLoading = false;
+    });
+  }
 
   DateTime _nextWeekday(int weekday) {
     final today = DateTime.now();
     final delta = (weekday - today.weekday + 7) % 7;
     return today.add(Duration(days: delta));
+  }
+
+  void _navigateToMembersView(BuildContext context, DateTime date, String type, Map<String, dynamic>? userData) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MembersView(
+          date: date,
+          type: type,
+          members: _paidMembers,
+          queue: [],
+        ),
+        settings: RouteSettings(arguments: userData),
+      ),
+    );
   }
 
   List<DateTime> _highlightedDays() {
@@ -25,38 +69,14 @@ class HomeView extends StatelessWidget {
     return days;
   }
 
-  void _navigateToMembersView(BuildContext context, DateTime date, String type) {
-    final members = [
-      Member(name: 'Алексей', isPresent: true),
-      Member(name: 'Дмитрий', isPresent: false),
-      Member(name: 'Сергей', isPresent: true),
-    ];
-
-    final queue = ['Пётр', 'Николай', 'Игорь'];
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MembersView(
-          date: date,
-          type: type,
-          members: members,
-          queue: queue,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final userData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    final String name = userData?['name'] ?? 'Иван';
-    final String lastName = userData?['last_name'] ?? 'Иванов';
+    final String name = userData?['name'] ?? 'Uknown';
+    final String lastName = userData?['last_name'] ?? 'Uknown';
     final String avatarUrl = userData?['avatar_url'] ??
         'https://api.dicebear.com/7.x/bottts/png?seed=$name+$lastName';
-
-    final highlighted = _highlightedDays();
 
     return Scaffold(
       appBar: AppBar(
@@ -118,92 +138,94 @@ class HomeView extends StatelessWidget {
             ],
           ),
         ),
-        child: Column(
-          children: [
-            const SizedBox(height: kToolbarHeight + 50),
-            Column(
-              children: [1, 3, 5].map((wday) {
-                final date = _nextWeekday(wday);
-                final weekdayStr = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][wday - 1];
-                final type = wday == 5 ? 'Игра' : 'Тренировка';
-                return InkWell(
-                  onTap: () => _navigateToMembersView(context, date, type),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
+            : Column(
+                children: [
+                  const SizedBox(height: kToolbarHeight + 50),
+                  Column(
+                    children: [1, 3, 5].map((wday) {
+                      final date = _nextWeekday(wday);
+                      final weekdayStr = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][wday - 1];
+                      final type = wday == 5 ? 'Игра' : 'Тренировка';
+                      return InkWell(
+                        onTap: () => _navigateToMembersView(context, date, type, userData),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '$weekdayStr – ${date.day}.${date.month}',
+                                style: const TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: type == 'Игра' ? Colors.blue : Colors.green,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  type,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white24),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '$weekdayStr – ${date.day}.${date.month}',
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                    child: TableCalendar(
+                      locale: "en_US",
+                      rowHeight: 43,
+                      headerStyle: HeaderStyle(
+                        formatButtonVisible: false,
+                        titleCentered: true,
+                        leftChevronIcon: const Icon(Icons.chevron_left, color: Colors.white),
+                        rightChevronIcon: const Icon(Icons.chevron_right, color: Colors.white),
+                        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
+                      ),
+                      daysOfWeekStyle: const DaysOfWeekStyle(
+                        weekdayStyle: TextStyle(color: Colors.white),
+                        weekendStyle: TextStyle(color: Colors.white),
+                      ),
+                      calendarStyle: CalendarStyle(
+                        defaultTextStyle: const TextStyle(color: Colors.white),
+                        weekendTextStyle: const TextStyle(color: Colors.white),
+                        outsideTextStyle: const TextStyle(color: Colors.white38),
+                        todayDecoration: BoxDecoration(
+                          color: Colors.blueAccent,
+                          shape: BoxShape.circle,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: type == 'Игра' ? Colors.blue : Colors.green,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            type,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+                        todayTextStyle: const TextStyle(color: Colors.white),
+                        selectedTextStyle: const TextStyle(color: Colors.white),
+                      ),
+                      focusedDay: DateTime.now(),
+                      firstDay: DateTime.utc(2010, 10, 16),
+                      lastDay: DateTime.utc(2030, 3, 14),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white24),
+                ],
               ),
-              child: TableCalendar(
-                locale: "en_US",
-                rowHeight: 43,
-                headerStyle: HeaderStyle(
-                  formatButtonVisible: false,
-                  titleCentered: true,
-                  leftChevronIcon: const Icon(Icons.chevron_left, color: Colors.white),
-                  rightChevronIcon: const Icon(Icons.chevron_right, color: Colors.white),
-                  titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
-                ),
-                daysOfWeekStyle: const DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(color: Colors.white),
-                  weekendStyle: TextStyle(color: Colors.white),
-                ),
-                calendarStyle: CalendarStyle(
-                  defaultTextStyle: const TextStyle(color: Colors.white),
-                  weekendTextStyle: const TextStyle(color: Colors.white),
-                  outsideTextStyle: const TextStyle(color: Colors.white38),
-                  todayDecoration: BoxDecoration(
-                    color: Colors.blueAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  todayTextStyle: const TextStyle(color: Colors.white),
-                  selectedTextStyle: const TextStyle(color: Colors.white),
-                ),
-                focusedDay: DateTime.now(),
-                firstDay: DateTime.utc(2010, 10, 16),
-                lastDay: DateTime.utc(2030, 3, 14),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

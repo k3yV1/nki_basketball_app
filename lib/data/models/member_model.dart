@@ -1,6 +1,6 @@
 class Member {
   final String name;
-  final bool isPresent;
+  final bool isReady;
 
-  Member({required this.name, required this.isPresent});
+  Member({required this.name, required this.isReady});
 }
