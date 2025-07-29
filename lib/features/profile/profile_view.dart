@@ -1,8 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:nki_basketball/services/logout_service.dart';
+import 'package:nki_basketball/services/subscriptions/subscriptions_service.dart';
 
-class ProfileView extends StatelessWidget {
+class ProfileView extends StatefulWidget {
   const ProfileView({Key? key}) : super(key: key);
+
+  @override
+  State<ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends State<ProfileView> {
+  late int userId;
+  late bool isReady;
+  bool? selectedReady;
+
+  @override
+  void initState() {
+    super.initState();
+    isReady = false;
+    selectedReady = null;
+  }
+
+  Future<void> _updatePresence(bool ready) async {
+    final success = await SubscriptionsService().updateUserReadyStatus(userId, ready);
+    if (success) {
+      setState(() {
+        isReady = ready;
+        selectedReady = null; // сбрасываем после сохранения
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ready ? 'Вы записались на тренировку' : 'Вы отказались от участия')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ошибка при обновлении статуса')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +48,10 @@ class ProfileView extends StatelessWidget {
     final String avatarUrl = userData?['avatar_url'] ??
         'https://api.dicebear.com/7.x/bottts/png?seed=$name+$lastName';
     final bool isAdmin = userData?['is_admin'] ?? false;
+    userId = userData?['id'] ?? 0;
+    isReady = userData?['is_ready'] ?? false;
 
+    final bool shouldShowSave = selectedReady != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -47,18 +84,11 @@ class ProfileView extends StatelessWidget {
                 width: 160,
                 height: 160,
                 fit: BoxFit.cover,
-                // errorBuilder: (context, error, stackTrace) => Image.asset(
-                //   'assets/images/nki_basketball_logo.png',
-                //   width: 160,
-                //   height: 160,
-                //   fit: BoxFit.cover,
-                // ),
               ),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: () {
-                // Здесь можно открыть диалог/ввод URL для замены аватара
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Функция загрузки аватара в разработке')),
                 );
@@ -102,80 +132,126 @@ class ProfileView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            if (isAdmin)
+
+            // Статус присутствия
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white24),
               ),
-              child: InkWell(
-                onTap: () {
-                  Navigator.pushNamed(context, '/users');
-                },
-                child: const Text(
-                  'Пользователи',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.check, color: Colors.green),
+                      label: const Text('Я буду'),
+                      onPressed: () => setState(() => selectedReady = true),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.green),
+                        backgroundColor: (selectedReady ?? isReady) == true
+                            ? Colors.green.withOpacity(0.3)
+                            : Colors.transparent,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.close, color: Colors.redAccent),
+                      label: const Text('Не буду'),
+                      onPressed: () => setState(() => selectedReady = false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Color.fromARGB(255, 249, 201, 201)),
+                        backgroundColor: (selectedReady ?? isReady) == false
+                            ? Colors.redAccent.withOpacity(0.3)
+                            : Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (isAdmin)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: InkWell(
-                onTap: () {
-                  Navigator.pushNamed(context, '/subscriptions');
-                },
-                child: const Text(
-                  'Активные абоненты',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
+
+            const SizedBox(height: 14),
             const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Изменения сохранены')),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            if (shouldShowSave)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => _updatePresence(selectedReady!),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  'Сохранить изменения',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
+                  child: const Text(
+                    'Сохранить изменения',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+
+            if (isAdmin)
+              Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/users');
+                      },
+                      child: const Text(
+                        'Пользователи',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/subscriptions');
+                      },
+                      child: const Text(
+                        'Активные абоненты',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+            const SizedBox(height: 16),
+
+            // Кнопка "Выйти"
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(

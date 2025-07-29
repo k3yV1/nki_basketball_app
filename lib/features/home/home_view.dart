@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:nki_basketball/features/members/members_view.dart';
-import 'package:nki_basketball/data/models/member_model.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({Key? key}) : super(key: key);
@@ -12,37 +11,16 @@ class HomeView extends StatelessWidget {
     return today.add(Duration(days: delta));
   }
 
-  List<DateTime> _highlightedDays() {
-    final now = DateTime.now();
-    final start = now.subtract(const Duration(days: 30));
-    final end = now.add(const Duration(days: 30));
-    final days = <DateTime>[];
-    for (var d = start; d.isBefore(end); d = d.add(const Duration(days: 1))) {
-      if ([DateTime.monday, DateTime.wednesday, DateTime.friday].contains(d.weekday)) {
-        days.add(d);
-      }
-    }
-    return days;
-  }
-
-  void _navigateToMembersView(BuildContext context, DateTime date, String type) {
-    final members = [
-      Member(name: 'Алексей', isPresent: true),
-      Member(name: 'Дмитрий', isPresent: false),
-      Member(name: 'Сергей', isPresent: true),
-    ];
-
-    final queue = ['Пётр', 'Николай', 'Игорь'];
-
+  void _navigateToMembersView(BuildContext context, DateTime date, String type, Map<String, dynamic>? userData) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => MembersView(
           date: date,
           type: type,
-          members: members,
-          queue: queue,
+          queue: [],
         ),
+        settings: RouteSettings(arguments: userData),
       ),
     );
   }
@@ -51,12 +29,10 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final userData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    final String name = userData?['name'] ?? 'Иван';
-    final String lastName = userData?['last_name'] ?? 'Иванов';
+    final String name = userData?['name'] ?? 'Unknown';
+    final String lastName = userData?['last_name'] ?? 'Unknown';
     final String avatarUrl = userData?['avatar_url'] ??
         'https://api.dicebear.com/7.x/bottts/png?seed=$name+$lastName';
-
-    final highlighted = _highlightedDays();
 
     return Scaffold(
       appBar: AppBar(
@@ -127,7 +103,7 @@ class HomeView extends StatelessWidget {
                 final weekdayStr = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][wday - 1];
                 final type = wday == 5 ? 'Игра' : 'Тренировка';
                 return InkWell(
-                  onTap: () => _navigateToMembersView(context, date, type),
+                  onTap: () => _navigateToMembersView(context, date, type, userData),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
