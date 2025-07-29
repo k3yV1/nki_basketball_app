@@ -39,7 +39,7 @@ class SubscriptionsService {
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
-        print(jsonList);
+        print("active_subscriptions: ${jsonList}");
         return jsonList.map((json) => Subscription.fromJson(json)).toList();
       } else {
         print('Failed to fetch subscriptions: ${response.statusCode}');
