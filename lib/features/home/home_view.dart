@@ -11,14 +11,14 @@ class HomeView extends StatelessWidget {
     return today.add(Duration(days: delta));
   }
 
-  void _navigateToMembersView(BuildContext context, DateTime date, String type, Map<String, dynamic>? userData) {
+  void _navigateToMembersView(
+      BuildContext context, DateTime date, String type, Map<String, dynamic>? userData) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => MembersView(
           date: date,
           type: type,
-          queue: [],
         ),
         settings: RouteSettings(arguments: userData),
       ),
