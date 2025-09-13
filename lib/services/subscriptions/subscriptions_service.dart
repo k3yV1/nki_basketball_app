@@ -51,6 +51,27 @@ class SubscriptionsService {
     }
   }
 
+  Future<bool> isActiveSubscription(int userId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/subscriptions/is_active_user_subscription/$userId'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final isActive = data['isActive']?['subscription'] as bool? ?? false;
+      return isActive;
+    } else {
+      print('Failed to fetch subscriptions: ${response.statusCode}');
+      return false;
+    }
+  } catch (e) {
+    print('Error fetching subscriptions: $e');
+    return false;
+  }
+}
+
+
   Future<bool> updateSubscriptionStatus(int id, bool isPaid) async {
     try {
       final response = await http.put(

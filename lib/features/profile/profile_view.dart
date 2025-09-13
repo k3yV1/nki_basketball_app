@@ -13,23 +13,46 @@ class _ProfileViewState extends State<ProfileView> {
   late int userId;
   late bool isReady;
   bool? selectedReady;
+  bool isActiveSubscription = false;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     isReady = false;
     selectedReady = null;
+    isActiveSubscription = false;
+    isLoading = true;
+  }
+
+  Future<void> _checkActiveSubscription(int userId) async {
+    final hasActive = await SubscriptionsService().isActiveSubscription(userId);
+    setState(() {
+      isActiveSubscription = hasActive;
+      isLoading = false;
+    });
+
+    // if (!hasActive) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text('У вас нет активного абонемента')),
+    //   );
+    // }
   }
 
   Future<void> _updatePresence(bool ready) async {
-    final success = await SubscriptionsService().updateUserReadyStatus(userId, ready);
+    final success =
+        await SubscriptionsService().updateUserReadyStatus(userId, ready);
     if (success) {
       setState(() {
         isReady = ready;
-        selectedReady = null; // сбрасываем после сохранения
+        selectedReady = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ready ? 'Вы записались на тренировку' : 'Вы отказались от участия')),
+        SnackBar(
+          content: Text(
+            ready ? 'Вы записались на тренировку' : 'Вы отказались от участия',
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -40,7 +63,8 @@ class _ProfileViewState extends State<ProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    final userData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final userData =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     final String name = userData?['name'] ?? 'Имя';
     final String lastName = userData?['last_name'] ?? 'Фамилия';
@@ -48,8 +72,14 @@ class _ProfileViewState extends State<ProfileView> {
     final String avatarUrl = userData?['avatar_url'] ??
         'https://api.dicebear.com/7.x/bottts/png?seed=$name+$lastName';
     final bool isAdmin = userData?['is_admin'] ?? false;
+
     userId = userData?['id'] ?? 0;
     isReady = userData?['is_ready'] ?? false;
+
+    // При первом рендере запускаем проверку подписки
+    if (isLoading) {
+      _checkActiveSubscription(userId);
+    }
 
     final bool shouldShowSave = selectedReady != null;
 
@@ -90,13 +120,15 @@ class _ProfileViewState extends State<ProfileView> {
             OutlinedButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Функция загрузки аватара в разработке')),
+                  const SnackBar(
+                      content: Text('Функция загрузки аватара в разработке')),
                 );
               },
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.white),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text('Загрузить изображение'),
             ),
@@ -133,50 +165,53 @@ class _ProfileViewState extends State<ProfileView> {
             ),
             const SizedBox(height: 14),
 
-            // Статус присутствия
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.check, color: Colors.green),
-                      label: const Text('Я буду'),
-                      onPressed: () => setState(() => selectedReady = true),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.green),
-                        backgroundColor: (selectedReady ?? isReady) == true
-                            ? Colors.green.withOpacity(0.3)
-                            : Colors.transparent,
+            // Блок показывается только если есть активная подписка
+            if (isActiveSubscription)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.check, color: Colors.green),
+                        label: const Text('Я буду'),
+                        onPressed: () => setState(() => selectedReady = true),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.green),
+                          backgroundColor: (selectedReady ?? isReady) == true
+                              ? Colors.green.withOpacity(0.3)
+                              : Colors.transparent,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.close, color: Colors.redAccent),
-                      label: const Text('Не буду'),
-                      onPressed: () => setState(() => selectedReady = false),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Color.fromARGB(255, 249, 201, 201)),
-                        backgroundColor: (selectedReady ?? isReady) == false
-                            ? Colors.redAccent.withOpacity(0.3)
-                            : Colors.transparent,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon:
+                            const Icon(Icons.close, color: Colors.redAccent),
+                        label: const Text('Не буду'),
+                        onPressed: () => setState(() => selectedReady = false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(
+                              color: Color.fromARGB(255, 249, 201, 201)),
+                          backgroundColor: (selectedReady ?? isReady) == false
+                              ? Colors.redAccent.withOpacity(0.3)
+                              : Colors.transparent,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
             const SizedBox(height: 14),
             const Spacer(),
@@ -257,7 +292,8 @@ class _ProfileViewState extends State<ProfileView> {
               child: OutlinedButton(
                 onPressed: () async {
                   await LogoutService().logout();
-                  Navigator.of(context).pushNamedAndRemoveUntil('/signin', (route) => false);
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/signin', (route) => false);
                 },
                 style: OutlinedButton.styleFrom(
                   backgroundColor: Colors.white,
