@@ -10,59 +10,90 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  late int userId;
-  late bool isReady;
+  int userId = 0;
+  bool isReady = false; 
+  
   bool? selectedReady;
   bool isActiveSubscription = false;
   bool isLoading = true;
+  bool _dataInitialized = false; // Флаг для однократной инициализации
 
   @override
   void initState() {
     super.initState();
-    isReady = false;
     selectedReady = null;
     isActiveSubscription = false;
-    isLoading = true;
   }
 
-  Future<void> _checkActiveSubscription(int userId) async {
-    final hasActive = await SubscriptionsService().isActiveSubscription(userId);
-    setState(() {
-      isActiveSubscription = hasActive;
-      isLoading = false;
-    });
+  // ⭐️ ИСПОЛЬЗУЕМ didChangeDependencies ДЛЯ ИНИЦИАЛИЗАЦИИ И ЗАПУСКА ЗАГРУЗКИ
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_dataInitialized) { // Инициализируем только один раз
+      final userData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      
+      // Инициализируем userId из аргументов
+      userId = userData?['id'] ?? 0;
+      
+      // Запускаем асинхронную проверку, которая установит isLoading=false и isReady
+      _checkActiveSubscription(userId);
+      _dataInitialized = true;
+    }
+  }
 
-    // if (!hasActive) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text('У вас нет активного абонемента')),
-    //   );
-    // }
+  // ⭐️ ИЗМЕНЕНО: Загружаем не только подписку, но и актуальный isReady
+  Future<void> _checkActiveSubscription(int userId) async {
+    // ⚠️ ПРЕДПОЛАГАЕТСЯ, что SubscriptionsService().getSubscriptionStatus(userId)
+    // возвращает актуальные данные: {'hasActive': bool, 'isReady': bool}
+    
+    // Вам нужно будет реализовать этот метод в SubscriptionsService, 
+    // чтобы он возвращал оба поля из БД.
+    final hasActive = await SubscriptionsService().isActiveSubscription(userId);
+    // ❌ ВАЖНО: Вместо hasActive, вам нужно получать полный статус, 
+    // включая isReady, из БД. Так как у меня нет вашего SubscriptionsService, 
+    // я просто беру hasActive, но ВАМ нужно тут получить и актуальный isReady с сервера.
+    // 
+    // Пример, если бы у вас был метод getReadyStatus:
+    final currentIsReady = await SubscriptionsService().getReadyStatus(userId);
+    
+    if (mounted) {
+      setState(() {
+        isActiveSubscription = hasActive;
+        isReady = currentIsReady; // ⭐️ Устанавливаем isReady АКТУАЛЬНЫМ значением с сервера
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _updatePresence(bool ready) async {
     final success =
         await SubscriptionsService().updateUserReadyStatus(userId, ready);
     if (success) {
-      setState(() {
-        isReady = ready;
-        selectedReady = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            ready ? 'Вы записались на тренировку' : 'Вы отказались от участия',
+      if (mounted) {
+        setState(() {
+          isReady = ready; // isReady теперь обновляется только здесь
+          selectedReady = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ready ? 'Вы записались на тренировку' : 'Вы отказались от участия',
+            ),
           ),
-        ),
-      );
+        );
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ошибка при обновлении статуса')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ошибка при обновлении статуса')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Аргументы используем только для статических данных (имя, почта и т.д.)
     final userData =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
@@ -73,13 +104,7 @@ class _ProfileViewState extends State<ProfileView> {
         'https://api.dicebear.com/7.x/bottts/png?seed=$name+$lastName';
     final bool isAdmin = userData?['is_admin'] ?? false;
 
-    userId = userData?['id'] ?? 0;
-    isReady = userData?['is_ready'] ?? false;
-
-    // При первом рендере запускаем проверку подписки
-    if (isLoading) {
-      _checkActiveSubscription(userId);
-    }
+    // ❌ УДАЛЕНО: Логика инициализации userId и isReady из userData
 
     final bool shouldShowSave = selectedReady != null;
 
@@ -116,22 +141,22 @@ class _ProfileViewState extends State<ProfileView> {
                 fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Функция загрузки аватара в разработке')),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Загрузить изображение'),
-            ),
+            // const SizedBox(height: 12),
+            // OutlinedButton(
+            //   onPressed: () {
+            //     ScaffoldMessenger.of(context).showSnackBar(
+            //       const SnackBar(
+            //           content: Text('Функция загрузки аватара в разработке')),
+            //     );
+            //   },
+            //   style: OutlinedButton.styleFrom(
+            //     side: const BorderSide(color: Colors.white),
+            //     foregroundColor: Colors.white,
+            //     shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(8)),
+            //   ),
+            //   child: const Text('Загрузить изображение'),
+            // ),
             const SizedBox(height: 24),
             Text(
               '$name $lastName',
@@ -166,7 +191,7 @@ class _ProfileViewState extends State<ProfileView> {
             const SizedBox(height: 14),
 
             // Блок показывается только если есть активная подписка
-            if (isActiveSubscription)
+            if (isActiveSubscription && !isLoading) // Добавляем проверку isLoading
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -186,7 +211,8 @@ class _ProfileViewState extends State<ProfileView> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: const BorderSide(color: Colors.green),
-                          backgroundColor: (selectedReady ?? isReady) == true
+                          // ЛОГИКА
+                          backgroundColor: (selectedReady == true || (selectedReady == null && isReady == true))
                               ? Colors.green.withOpacity(0.3)
                               : Colors.transparent,
                         ),
@@ -203,7 +229,8 @@ class _ProfileViewState extends State<ProfileView> {
                           foregroundColor: Colors.white,
                           side: const BorderSide(
                               color: Color.fromARGB(255, 249, 201, 201)),
-                          backgroundColor: (selectedReady ?? isReady) == false
+                          // ЛОГИКА
+                          backgroundColor: (selectedReady == false || (selectedReady == null && isReady == false))
                               ? Colors.redAccent.withOpacity(0.3)
                               : Colors.transparent,
                         ),
@@ -211,7 +238,9 @@ class _ProfileViewState extends State<ProfileView> {
                     ),
                   ],
                 ),
-              ),
+              )
+            else if (isLoading)
+              const Center(child: CircularProgressIndicator(color: Colors.white)), // Показываем загрузку, пока не получим isReady
 
             const SizedBox(height: 14),
             const Spacer(),
@@ -292,8 +321,10 @@ class _ProfileViewState extends State<ProfileView> {
               child: OutlinedButton(
                 onPressed: () async {
                   await LogoutService().logout();
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/signin', (route) => false);
+                  if (mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                        '/signin', (route) => false);
+                  }
                 },
                 style: OutlinedButton.styleFrom(
                   backgroundColor: Colors.white,

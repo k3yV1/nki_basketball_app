@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class Subscription {
   final int id;
-  final int userId;
+  final int user_id;
   final String name;
   final String last_name;
   final bool isPaid;
@@ -11,7 +11,7 @@ class Subscription {
 
   Subscription({
     required this.id,
-    required this.userId,
+    required this.user_id,
     required this.name,
     required this.last_name,
     required this.isPaid,
@@ -23,7 +23,7 @@ class Subscription {
       id: json['id'],
       name: json['name'] ?? 'Unknown User',
       last_name: json['last_name'] ?? 'Unknown Last Name',
-      userId: json['user_id'],
+      user_id: json['user_id'],
       isPaid: json['is_paid'] == 1 || json['is_paid'],
       is_ready: json['is_ready'] == 1 || json['is_ready'] == true,
     );
@@ -71,6 +71,26 @@ class SubscriptionsService {
   }
 }
 
+Future<bool> getReadyStatus(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/subscriptions/get_ready_status/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final isReady = data['isReady'] as bool? ?? false;
+        print("User ready status: $isReady");
+        return isReady;
+      } else {
+        print('Failed to fetch user ready status: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Error fetching user ready status: $e');
+      return false;
+    }
+  }
 
   Future<bool> updateSubscriptionStatus(int id, bool isPaid) async {
     try {

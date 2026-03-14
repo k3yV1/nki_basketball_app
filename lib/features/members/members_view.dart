@@ -27,6 +27,10 @@ class _MembersViewState extends State<MembersView> {
 
   late String _userId;
   late String _trainingId;
+  
+  bool _isUserActive = false;
+  bool _isUserInQueue = false;
+  bool _isUserReady = false;
 
   @override
   void initState() {
@@ -42,16 +46,33 @@ class _MembersViewState extends State<MembersView> {
   Future<void> _fetchData() async {
     try {
       final subscriptions = await _subscriptionsService.fetchSubscriptions();
+      
+      // 1. ПОИСК ПОДПИСКИ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
+      final Subscription? userSubscription = subscriptions
+      .where((s) => s.user_id.toString() == _userId)
+      .cast<Subscription?>()
+      .firstWhere((s) => true, orElse: () => null);
+      
+      final bool isPaidSubscriber = userSubscription?.isPaid ?? false;
+      final bool userIsReady = userSubscription?.is_ready ?? false; 
+
       final members = subscriptions
-          .where((s) => s.isPaid)
+          .where((s) => s.isPaid && s.is_ready)
           .map((s) => Member(name: '${s.name} ${s.last_name}', isReady: s.is_ready))
           .toList();
 
       final queue = await _queueService.getQueue(widget.date);
+      
+      // 2. ПРОВЕРКА, НАХОДИТСЯ ЛИ ПОЛЬЗОВАТЕЛЬ В ОЧЕРЕДИ
+      final userName = '${userSubscription?.name ?? ''} ${userSubscription?.last_name ?? ''}'.trim();
+      final bool userInQueue = queue.contains(userName) && userSubscription != null;
 
       setState(() {
         _members = members;
         _queue = queue;
+        _isUserActive = isPaidSubscriber;
+        _isUserInQueue = userInQueue;
+        _isUserReady = userIsReady;
         _isLoading = false;
       });
     } catch (e) {
@@ -65,9 +86,11 @@ class _MembersViewState extends State<MembersView> {
       await _queueService.addToQueue(_trainingId, _userId, widget.date);
       await _fetchData();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 
@@ -76,9 +99,11 @@ class _MembersViewState extends State<MembersView> {
       await _queueService.removeFromQueue(_userId, widget.date);
       await _fetchData();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 
@@ -204,45 +229,61 @@ class _MembersViewState extends State<MembersView> {
                                       ),
                                     )),
                                 const SizedBox(height: 24),
-                                Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white, // чёрный фон
-                                      foregroundColor: Colors.black, // белый текст
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    onPressed: _joinQueue,
-                                    child: const Text(
-                                      "Встать в очередь",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                
+                                // ⭐️ УСЛОВНОЕ ОТОБРАЖЕНИЕ КНОПОК
+                                // Показывать кнопки, если:
+                                // 1. Пользователь в очереди (тогда кнопка "Выйти")
+                                // 2. Или пользователь не готов И не в очереди (тогда кнопка "Встать")
+                                if (_isUserInQueue || (!_isUserReady && !_isUserInQueue))
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (!_isUserInQueue)
+                                        // "ВСТАТЬ В ОЧЕРЕДЬ"
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: Colors.black,
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 20, vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: _joinQueue,
+                                            child: const Text(
+                                              "Встать в очередь",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        // "ВЫЙТИ ИЗ ОЧЕРЕДИ"
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.redAccent, 
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 20, vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: _leaveQueue,
+                                            child: const Text(
+                                              "Выйти из очереди",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white, // чёрный фон
-                                      foregroundColor: Colors.black, // белый текст
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    onPressed: _leaveQueue,
-                                    child: const Text(
-                                      "Выйти из очереди",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
 
                                 const Spacer(),
                               ],
