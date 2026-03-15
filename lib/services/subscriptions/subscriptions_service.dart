@@ -20,10 +20,10 @@ class Subscription {
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
     return Subscription(
-      id: json['id'],
+      id: int.tryParse(json['id'].toString()) ?? 0,
       name: json['name'] ?? 'Unknown User',
       last_name: json['last_name'] ?? 'Unknown Last Name',
-      user_id: json['user_id'],
+      user_id: int.tryParse(json['user_id'].toString()) ?? 0,
       isPaid: json['is_paid'] == 1 || json['is_paid'],
       is_ready: json['is_ready'] == 1 || json['is_ready'] == true,
     );
