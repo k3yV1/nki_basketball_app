@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import 'routes/app_routes.dart';
 import 'services/notifications/notifications_service.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // init timezone
+  tz.initializeTimeZones();
+
   // init notifications
   NotificationsService().initialize();
 
-  Future.delayed(Duration(seconds: 5), () {
-    NotificationsService().showNotification(
-      id: 0,
-      title: '🏀 Тренировка сегодня',
-      body: 'Не забудь подготовиться и взять кроссовки!',
+  // schedule notification for training at 19:00 (1 hour before)
+  final now = DateTime.now();
+  final trainingTime = DateTime(now.year, now.month, now.day, 19, 0);
+  final notifyTime = trainingTime.subtract(const Duration(hours: 1));
+  if (now.isBefore(notifyTime)) {
+    NotificationsService().scheduleNotification(
+      id: 1,
+      title: '🏀 Тренировка через час',
+      body: 'Тренировка в 19:00. Не забудь подготовиться и взять кроссовки!',
+      scheduledTime: notifyTime,
     );
-  });
+  }
 
   runApp(NkiBasketballApp());
 }

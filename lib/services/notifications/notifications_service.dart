@@ -1,6 +1,29 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' show DateTimeComponents, NotificationDetails, AndroidNotificationDetails, DarwinNotificationDetails, InitializationSettings, AndroidInitializationSettings, DarwinInitializationSettings, FlutterLocalNotificationsPlugin, Importance, Priority;
 
 class NotificationsService {
+    // SCHEDULE NOTIFICATION
+    Future<void> scheduleNotification({
+      required int id,
+      required String title,
+      required String body,
+      required DateTime scheduledTime,
+    }) async {
+      if (!_initialized) {
+        await initialize();
+      }
+      await notificationPlugins.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledTime, tz.local),
+        notificationDetails(),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
   final notificationPlugins = FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
@@ -10,6 +33,8 @@ class NotificationsService {
   // INITIALIZE
   Future<void> initialize() async {
     if (_initialized) return;
+
+    tz.initializeTimeZones();
 
     const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initializationSettingsIOS = DarwinInitializationSettings(
@@ -25,7 +50,7 @@ class NotificationsService {
 
     await notificationPlugins.initialize(initializationSettings);
 
-    //_initialized = true;
+    _initialized = true;
   }
 
   // NOTIFICATIONS DETAILS SETUP

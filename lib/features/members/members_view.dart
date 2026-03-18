@@ -179,7 +179,7 @@ class _MembersViewState extends State<MembersView> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          '${widget.type} — ${widget.date.day}.${widget.date.month}',
+          '${widget.type} — ${widget.date.day.toString().padLeft(2, '0')}.${widget.date.month.toString().padLeft(2, '0')}.${widget.date.year}',
           style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
