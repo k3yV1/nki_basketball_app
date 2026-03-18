@@ -28,7 +28,6 @@ class _SubscriptionViewState extends State<SubscriptionView> {
       ),
       extendBodyBehindAppBar: true,
       body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -68,7 +67,7 @@ class _SubscriptionViewState extends State<SubscriptionView> {
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.only(top: kToolbarHeight + 80, bottom: 40),
+                padding: const EdgeInsets.only(top: kToolbarHeight + 80, bottom: 40, left: 24, right: 24),
                 itemCount: subscriptions.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
@@ -104,7 +103,7 @@ class _SubscriptionViewState extends State<SubscriptionView> {
                     ),
                   );
                 },
-              );;
+              );
             }
           },
         ),

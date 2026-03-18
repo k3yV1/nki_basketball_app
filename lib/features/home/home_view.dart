@@ -115,9 +115,18 @@ class HomeView extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '$weekdayStr – ${date.day}.${date.month}',
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}',
+                              style: const TextStyle(color: Colors.white, fontSize: 16),
+                            ),
+                            const Text(
+                              '19:00',
+                              style: TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ],
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -150,7 +159,8 @@ class HomeView extends StatelessWidget {
               ),
               child: TableCalendar(
                 locale: "en_US",
-                rowHeight: 43,
+                rowHeight: 35,
+                startingDayOfWeek: StartingDayOfWeek.monday,
                 headerStyle: HeaderStyle(
                   formatButtonVisible: false,
                   titleCentered: true,
@@ -166,19 +176,74 @@ class HomeView extends StatelessWidget {
                   defaultTextStyle: const TextStyle(color: Colors.white),
                   weekendTextStyle: const TextStyle(color: Colors.white),
                   outsideTextStyle: const TextStyle(color: Colors.white38),
-                  todayDecoration: BoxDecoration(
-                    color: Colors.blueAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  todayTextStyle: const TextStyle(color: Colors.white),
                   selectedTextStyle: const TextStyle(color: Colors.white),
+                ),
+                calendarBuilders: CalendarBuilders(
+                  todayBuilder: (context, day, focusedDay) {
+                    final isWorkoutDay = day.weekday == 1 || day.weekday == 3;
+                    final isGameDay = day.weekday == 5;
+                    final backgroundColor = isWorkoutDay ? Colors.greenAccent : (isGameDay ? Colors.blueAccent : Colors.white);
+                    final textColor = isWorkoutDay || isGameDay ? Colors.white : Colors.black;
+                    return Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: backgroundColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  defaultBuilder: (context, day, focusedDay) {
+                    final isWorkoutDay = day.weekday == 1 || day.weekday == 3;
+                    final isGameDay = day.weekday == 5;
+                    if (isGameDay && day.isAfter(DateTime.now().subtract(const Duration(days: 1)))) {
+                      return Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${day.day}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      );
+                    } else if (isWorkoutDay && day.isAfter(DateTime.now().subtract(const Duration(days: 1)))) {
+                      return Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${day.day}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return null;
+                  },
                 ),
                 focusedDay: DateTime.now(),
                 firstDay: DateTime.utc(2010, 10, 16),
                 lastDay: DateTime.utc(2030, 3, 14),
-              ),
             ),
-          ],
+        )],
         ),
       ),
     );
