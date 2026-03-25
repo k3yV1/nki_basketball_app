@@ -66,4 +66,18 @@ class UsersService {
       throw Exception('Ошибка при обновлении подписки');
     }
   }
+
+  Future<void> activateSubscription(int user_id) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/api/subscriptions/upsert_user_subscription/$user_id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'user_id': user_id, 'is_paid': true}),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Ошибка при активации абонемента: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
 }
