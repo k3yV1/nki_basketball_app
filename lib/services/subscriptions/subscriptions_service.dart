@@ -113,6 +113,22 @@ Future<bool> getReadyStatus(int userId) async {
     }
   }
 
+  Future<void> createSubscription(int userId) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/subscriptions'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'user_id': userId,
+        'subscription': true,
+        'is_paid': true,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Ошибка при создании абонемента: ${response.statusCode}');
+    }
+  }
+
   Future<bool> updateUserReadyStatus(int id, bool isReady) async {
     try {
       final response = await http.put(
